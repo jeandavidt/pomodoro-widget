@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pomodoro Test</title>
+</head>
+<body>
+    <style>
+        #timer {
+            text-align: center;
+            font-size: 72px;
+            margin: 0;
+            padding: 0;
+        }
+        .timer-controls {
+            display: flex;
+            width: 200px;
+            margin: 0 auto;
+
+        }
+        .timer-control {
+            padding: 8px 12px;
+            margin: 2px auto;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+    </style>
+
+
+    <div class="container">
+        <h1 id="timer"></h1>
+        <div class="timer-controls">
+            <div id="timer-start" class="timer-control">play</div>
+            <div id="timer-reset" class="timer-control">stop</div>
+        </div>
+    </div>
+
+<script>
+let countingDown;
+function CountdownTimer(seconds, tickRate) {
+    this.seconds = seconds || (25*60);
+    this.tickRate = tickRate || 500; // Milliseconds
+    this.tickFunctions = [];
+    this.isRunning = false;
+    countingDown = false;
+    this.remaining = this.seconds;
+
+    this.play = function() {
+        if (countingDown) {return;}
+        countingDown = true;
+        document.getElementById('timer-start').innerHTML = 'pause'
+        var startTime = Date.now(), 
+            thisTimer = this;
+            
+        (function tick() {
+            secondsSinceStart = ((Date.now() - startTime) / 1000) | 0;
+            var secondsRemaining = thisTimer.remaining - secondsSinceStart;
+            if (countingDown === false) {
+                thisTimer.remaining = secondsRemaining;
+            } else {
+                if (secondsRemaining > 0) {
+                    setTimeout(tick, thisTimer.tickRate);
+                } else {
+                    thisTimer.remaining = 0;
+                    countingDown = false;
+                }
+                var timeRemaining = parseSeconds(secondsRemaining);
+                thisTimer.tickFunctions.forEach(
+                    function(tickFunction) {
+                        tickFunction.call(this, timeRemaining.minutes, timeRemaining.seconds);
+                    }, 
+                    thisTimer);
+            }
+        }());        
+    };
+
+    this.pause = function() {
+        countingDown = false;
+        document.getElementById('timer-start').innerHTML = 'play'
+    };
+
+    this.onTick = function(tickFunction) {
+        if (typeof tickFunction === 'function') {
+            this.tickFunctions.push(tickFunction);
+        }
+    };
+}
+
+function parseSeconds(seconds) {
+    return {
+        'minutes': (seconds / 60) | 0,
+        'seconds': (seconds % 60) | 0
+    }
+}
+
+window.onload = function () {
+    var timerDisplay = document.getElementById('timer'),
+        timer = new CountdownTimer(),
+        timeObj = parseSeconds(25*60);
+    
+    function setTimeOnAllDisplays(minutes, seconds) {
+        clockMinutes = minutes < 10 ? '0' + minutes : minutes;
+        clockMinutes += ':';
+        clockSeconds = seconds < 10 ? '0' + seconds : seconds;
+        timerDisplay.textContent = clockMinutes + clockSeconds;
+    }
+    
+    function resetMainTimer(seconds) {
+        timer.pause();
+        timer = new CountdownTimer(seconds); 
+        timer.onTick(setTimeOnAllDisplays);
+        timer.play();
+        timer.pause();
+    }
+    
+    setTimeOnAllDisplays(timeObj.minutes, timeObj.seconds);
+    timer.onTick(setTimeOnAllDisplays);
+    
+    document.getElementById('timer-start').addEventListener('click', function () {
+        if (countingDown){timer.pause();}
+        else { timer.play();}
+    });
+        
+    document.getElementById('timer-reset').addEventListener('click', function () {
+        resetMainTimer(timer.seconds);
+    });
+};
+</script>
+</body>
+</html>
